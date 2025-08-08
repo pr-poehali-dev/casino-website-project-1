@@ -2,15 +2,19 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Icon from "@/components/ui/icon";
 import DepositDialog from "@/components/DepositDialog";
+import WithdrawDialog from "@/components/WithdrawDialog";
 
 interface HeaderProps {
   activeSection: string;
   setActiveSection: (section: string) => void;
   userBalance: number;
+  depositedBalance: number;
+  winningsBalance: number;
   depositFunds: (amount: number, method: string) => void;
+  withdrawFunds: (amount: number, method: string) => void;
 }
 
-export default function Header({ activeSection, setActiveSection, userBalance, depositFunds }: HeaderProps) {
+export default function Header({ activeSection, setActiveSection, userBalance, depositedBalance, winningsBalance, depositFunds, withdrawFunds }: HeaderProps) {
   return (
     <header className="border-b border-border glass-effect sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4">
@@ -65,6 +69,12 @@ export default function Header({ activeSection, setActiveSection, userBalance, d
                 Пополнить
               </Button>
             </DepositDialog>
+            <WithdrawDialog depositedBalance={depositedBalance} winningsBalance={winningsBalance} withdrawFunds={withdrawFunds}>
+              <Button size="sm" variant="outline" className="interactive-button">
+                <Icon name="Minus" className="mr-1" size={14} />
+                Вывести
+              </Button>
+            </WithdrawDialog>
           </div>
         </div>
       </div>

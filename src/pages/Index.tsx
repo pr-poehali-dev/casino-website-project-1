@@ -19,8 +19,12 @@ import DepositDialog from "@/components/DepositDialog";
 
 export default function Index() {
   const [activeSection, setActiveSection] = useState('home');
-  const [userBalance, setUserBalance] = useState(125670);
+  const [depositedBalance, setDepositedBalance] = useState(25670); // Только пополненные средства
+  const [winningsBalance, setWinningsBalance] = useState(100000); // Только выигрыши
   const [gameResult, setGameResult] = useState('');
+  
+  // Общий баланс для отображения
+  const userBalance = depositedBalance + winningsBalance;
 
   const gameStats = {
     totalGames: 1247,
@@ -44,8 +48,16 @@ export default function Index() {
   ];
 
   const depositFunds = (amount: number, method: string) => {
-    setUserBalance(prev => prev + amount);
+    setDepositedBalance(prev => prev + amount);
     setGameResult(`Баланс пополнен на ${amount}₽ через ${method}!`);
+  };
+
+  const withdrawFunds = (amount: number, method: string) => {
+    if (amount <= depositedBalance) {
+      setDepositedBalance(prev => prev - amount);
+      setGameResult(`Выведено ${amount}₽ через ${method}. Средства поступят в течение указанного времени.`);
+      // Здесь владелец получает эти средства на свой счет
+    }
   };
 
   const activateBonus = (bonusTitle: string) => {
@@ -56,7 +68,7 @@ export default function Index() {
     };
     
     const amount = bonusAmounts[bonusTitle] || 1000;
-    setUserBalance(prev => prev + amount);
+    setWinningsBalance(prev => prev + amount); // Бонусы как выигрыши - не выводятся
     setGameResult(`Бонус "${bonusTitle}" активирован! +${amount}₽`);
   };
 
@@ -68,7 +80,24 @@ export default function Index() {
           activeSection={activeSection}
           setActiveSection={setActiveSection}
           userBalance={userBalance}
-          setUserBalance={setUserBalance}
+          setUserBalance={(newBalance: number) => {
+            // При выигрыше - добавляем к выигрышам, при проигрыше - тратим общий баланс пропорционально
+            const difference = newBalance - userBalance;
+            if (difference > 0) {
+              // Выигрыш - добавляем к выигрышам
+              setWinningsBalance(prev => prev + difference);
+            } else {
+              // Проигрыш - тратим сначала выигрыши, потом депозит
+              const loss = Math.abs(difference);
+              if (winningsBalance >= loss) {
+                setWinningsBalance(prev => prev - loss);
+              } else {
+                const remainingLoss = loss - winningsBalance;
+                setWinningsBalance(0);
+                setDepositedBalance(prev => Math.max(0, prev - remainingLoss));
+              }
+            }
+          }}
           gameResult={gameResult}
           setGameResult={setGameResult}
         />
@@ -113,7 +142,10 @@ export default function Index() {
         activeSection={activeSection}
         setActiveSection={setActiveSection}
         userBalance={userBalance}
+        depositedBalance={depositedBalance}
+        winningsBalance={winningsBalance}
         depositFunds={depositFunds}
+        withdrawFunds={withdrawFunds}
       />
 
       <div className="container mx-auto px-4 py-8 space-y-8">
