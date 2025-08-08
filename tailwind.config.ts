@@ -61,6 +61,15 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				casino: {
+					gold: '#FFD700',
+					'gold-dark': '#FF9040',
+					red: '#FF0000',
+					'red-dark': '#BF0040',
+					dark: '#1A1A1A',
+					'dark-light': '#333333',
+					white: '#FFFFFF'
 				}
 			},
 			borderRadius: {
