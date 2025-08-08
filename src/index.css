@@ -6,44 +6,44 @@
 
 @layer base {
   :root {
-    --background: 10 10% 10%;
-    --foreground: 0 0% 100%;
+    --background: 220 13% 9%;
+    --foreground: 0 0% 98%;
 
-    --card: 0 0% 15%;
-    --card-foreground: 0 0% 100%;
+    --card: 220 13% 11%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 15%;
-    --popover-foreground: 0 0% 100%;
+    --popover: 220 13% 11%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 51 100% 50%;
-    --primary-foreground: 0 0% 0%;
+    --primary: 271 91% 65%;
+    --primary-foreground: 0 0% 98%;
 
-    --secondary: 0 100% 50%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 12 76% 61%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 0 0% 20%;
-    --muted-foreground: 0 0% 70%;
+    --muted: 220 13% 16%;
+    --muted-foreground: 0 0% 65%;
 
-    --accent: 0 100% 50%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 271 91% 65%;
+    --accent-foreground: 0 0% 98%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 25%;
-    --input: 0 0% 20%;
-    --ring: 51 100% 50%;
+    --border: 220 13% 18%;
+    --input: 220 13% 14%;
+    --ring: 271 91% 65%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 8%;
+    --sidebar-background: 220 13% 8%;
     --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 51 100% 50%;
-    --sidebar-primary-foreground: 0 0% 0%;
-    --sidebar-accent: 0 0% 15%;
+    --sidebar-primary: 271 91% 65%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 220 13% 15%;
     --sidebar-accent-foreground: 0 0% 90%;
-    --sidebar-border: 0 0% 20%;
-    --sidebar-ring: 51 100% 50%;
+    --sidebar-border: 220 13% 18%;
+    --sidebar-ring: 271 91% 65%;
   }
 
   .dark {
@@ -106,19 +106,69 @@
 }
 
 @layer components {
-  .casino-gradient {
-    @apply bg-gradient-to-r from-casino-gold via-casino-gold-dark to-casino-red;
+  .luxury-gradient {
+    @apply bg-gradient-to-br from-purple-600 via-purple-500 to-orange-500;
   }
 
-  .casino-glow {
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+  .luxury-glow {
+    box-shadow: 0 0 25px rgba(139, 92, 246, 0.3);
   }
 
-  .game-card {
-    @apply bg-card border border-border rounded-lg overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-xl;
+  .modern-card {
+    @apply bg-card/90 backdrop-blur-sm border border-border/50 rounded-2xl overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:bg-card/95;
   }
 
-  .game-card:hover {
-    box-shadow: 0 10px 30px rgba(255, 215, 0, 0.2);
+  .modern-card:hover {
+    box-shadow: 0 20px 40px rgba(139, 92, 246, 0.15);
+  }
+
+  .glass-effect {
+    @apply bg-white/5 backdrop-blur-md border border-white/10;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-purple-400 to-orange-400 bg-clip-text text-transparent;
+  }
+
+  .interactive-button {
+    @apply transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95;
+  }
+
+  .luxury-border {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(139, 92, 246, 0.4),
+      transparent
+    );
+    height: 1px;
+  }
+
+  .floating-animation {
+    animation: floating 3s ease-in-out infinite;
+  }
+
+  @keyframes floating {
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-glow {
+    0%,
+    100% {
+      box-shadow: 0 0 25px rgba(139, 92, 246, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 35px rgba(139, 92, 246, 0.5);
+    }
   }
 }
