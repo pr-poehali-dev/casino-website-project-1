@@ -41,7 +41,7 @@ export default function Index() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <h1 className="text-2xl font-bold casino-gradient bg-clip-text text-transparent">
-                CASINO ROYAL
+                LUXURYCARDCLUB
               </h1>
               <nav className="hidden md:flex space-x-6">
                 <Button variant="ghost" className="text-foreground hover:text-primary">
@@ -82,7 +82,7 @@ export default function Index() {
           <div className="absolute inset-0 bg-black/20"></div>
           <div className="relative z-10">
             <h2 className="text-4xl md:text-6xl font-bold text-black mb-4">
-              Добро пожаловать в Casino Royal
+              Добро пожаловать в LuxuryCardClub
             </h2>
             <p className="text-lg md:text-xl text-black/80 mb-8 max-w-2xl mx-auto">
               Премиум игровой опыт с лучшими играми, щедрыми бонусами и мгновенными выплатами
@@ -286,10 +286,10 @@ export default function Index() {
         <div className="container mx-auto px-4 py-8">
           <div className="text-center text-muted-foreground">
             <h4 className="text-xl font-bold casino-gradient bg-clip-text text-transparent mb-4">
-              CASINO ROYAL
+              LUXURYCARDCLUB
             </h4>
             <p className="text-sm">
-              © 2024 Casino Royal. Играйте ответственно. Только 18+
+              © 2024 LuxuryCardClub. Играйте ответственно. Только 18+
             </p>
             <div className="flex justify-center space-x-4 mt-4">
               <Button variant="ghost" size="sm">
