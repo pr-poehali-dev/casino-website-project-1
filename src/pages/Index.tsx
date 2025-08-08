@@ -4,12 +4,33 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import Icon from "@/components/ui/icon";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Index() {
   const [activeSection, setActiveSection] = useState('home');
   const [userBalance, setUserBalance] = useState(125670);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [gameResult, setGameResult] = useState('');
+  const [currentBet, setCurrentBet] = useState(100);
+  
+  // Slot Game State
+  const [slotSymbols, setSlotSymbols] = useState(['🍒', '🍋', '🍊']);
+  const [slotSpinning, setSlotSpinning] = useState(false);
+  
+  // Roulette State
+  const [rouletteNumber, setRouletteNumber] = useState(0);
+  const [rouletteSpinning, setRouletteSpinning] = useState(false);
+  const [rouletteBet, setRouletteBet] = useState({ type: 'number', value: 7 });
+
+  // BlackJack State
+  const [playerCards, setPlayerCards] = useState<number[]>([]);
+  const [dealerCards, setDealerCards] = useState<number[]>([]);
+  const [gameState, setGameState] = useState<'betting' | 'playing' | 'finished'>('betting');
 
   const gameStats = {
     totalGames: 1247,
@@ -39,20 +60,440 @@ export default function Index() {
     { title: "Кэшбэк", amount: "15%", description: "Возврат с каждой игры", active: false, expires: "Постоянно" }
   ];
 
-  const playGame = (gameName: string) => {
-    alert(`Запуск игры: ${gameName}\n\nВ полной версии здесь откроется игровой интерфейс!`);
+  const paymentMethods = [
+    { name: "Банковская карта", icon: "CreditCard", fee: "0%", time: "Мгновенно", popular: true },
+    { name: "СБП", icon: "Smartphone", fee: "0%", time: "Мгновенно", popular: true },
+    { name: "QIWI", icon: "Wallet", fee: "1%", time: "5 минут", popular: false },
+    { name: "WebMoney", icon: "Globe", fee: "2%", time: "10 минут", popular: false },
+    { name: "Криптовалюта", icon: "Bitcoin", fee: "0.5%", time: "30 минут", popular: false },
+    { name: "Мобильный платеж", icon: "Phone", fee: "3%", time: "Мгновенно", popular: false }
+  ];
+
+  // Slot Machine Logic
+  const playSlotMachine = () => {
+    if (userBalance < currentBet) {
+      setGameResult('Недостаточно средств!');
+      return;
+    }
+
+    setSlotSpinning(true);
+    setUserBalance(prev => prev - currentBet);
+    
+    // Spinning animation
+    const symbols = ['🍒', '🍋', '🍊', '🍇', '⭐', '💎', '🍀', '🔔'];
+    let spinCount = 0;
+    const maxSpins = 20;
+    
+    const spinInterval = setInterval(() => {
+      setSlotSymbols([
+        symbols[Math.floor(Math.random() * symbols.length)],
+        symbols[Math.floor(Math.random() * symbols.length)],
+        symbols[Math.floor(Math.random() * symbols.length)]
+      ]);
+      
+      spinCount++;
+      if (spinCount >= maxSpins) {
+        clearInterval(spinInterval);
+        
+        // Final result
+        const finalSymbols = [
+          symbols[Math.floor(Math.random() * symbols.length)],
+          symbols[Math.floor(Math.random() * symbols.length)],
+          symbols[Math.floor(Math.random() * symbols.length)]
+        ];
+        
+        setSlotSymbols(finalSymbols);
+        
+        // Check win conditions
+        let winAmount = 0;
+        if (finalSymbols[0] === finalSymbols[1] && finalSymbols[1] === finalSymbols[2]) {
+          // Three of a kind
+          if (finalSymbols[0] === '💎') winAmount = currentBet * 50;
+          else if (finalSymbols[0] === '⭐') winAmount = currentBet * 25;
+          else if (finalSymbols[0] === '🔔') winAmount = currentBet * 15;
+          else winAmount = currentBet * 10;
+        } else if (finalSymbols[0] === finalSymbols[1] || finalSymbols[1] === finalSymbols[2]) {
+          // Two of a kind
+          winAmount = currentBet * 2;
+        }
+        
+        if (winAmount > 0) {
+          setUserBalance(prev => prev + winAmount);
+          setGameResult(`Выигрыш: ${winAmount}₽! 🎉`);
+        } else {
+          setGameResult('Не повезло, попробуйте еще раз!');
+        }
+        
+        setSlotSpinning(false);
+      }
+    }, 100);
   };
 
-  const depositFunds = (amount: number) => {
+  // Roulette Logic
+  const playRoulette = () => {
+    if (userBalance < currentBet) {
+      setGameResult('Недостаточно средств!');
+      return;
+    }
+
+    setRouletteSpinning(true);
+    setUserBalance(prev => prev - currentBet);
+    
+    setTimeout(() => {
+      const result = Math.floor(Math.random() * 37); // 0-36
+      setRouletteNumber(result);
+      
+      let winAmount = 0;
+      if (rouletteBet.type === 'number' && result === rouletteBet.value) {
+        winAmount = currentBet * 35;
+      } else if (rouletteBet.type === 'red' && result > 0 && [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36].includes(result)) {
+        winAmount = currentBet * 2;
+      } else if (rouletteBet.type === 'black' && result > 0 && ![1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36].includes(result)) {
+        winAmount = currentBet * 2;
+      } else if (rouletteBet.type === 'even' && result > 0 && result % 2 === 0) {
+        winAmount = currentBet * 2;
+      } else if (rouletteBet.type === 'odd' && result > 0 && result % 2 === 1) {
+        winAmount = currentBet * 2;
+      }
+      
+      if (winAmount > 0) {
+        setUserBalance(prev => prev + winAmount);
+        setGameResult(`Выпало ${result}! Выигрыш: ${winAmount}₽! 🎉`);
+      } else {
+        setGameResult(`Выпало ${result}. Не повезло!`);
+      }
+      
+      setRouletteSpinning(false);
+    }, 2000);
+  };
+
+  // BlackJack Logic
+  const getCardValue = (card: number) => Math.min(card, 10);
+  const getHandValue = (cards: number[]) => cards.reduce((sum, card) => sum + getCardValue(card), 0);
+
+  const startBlackJack = () => {
+    if (userBalance < currentBet) {
+      setGameResult('Недостаточно средств!');
+      return;
+    }
+
+    setUserBalance(prev => prev - currentBet);
+    const newPlayerCards = [Math.ceil(Math.random() * 13), Math.ceil(Math.random() * 13)];
+    const newDealerCards = [Math.ceil(Math.random() * 13)];
+    
+    setPlayerCards(newPlayerCards);
+    setDealerCards(newDealerCards);
+    setGameState('playing');
+    setGameResult('');
+  };
+
+  const hitCard = () => {
+    const newCard = Math.ceil(Math.random() * 13);
+    const newCards = [...playerCards, newCard];
+    setPlayerCards(newCards);
+    
+    if (getHandValue(newCards) > 21) {
+      setGameResult('Перебор! Вы проиграли.');
+      setGameState('finished');
+    }
+  };
+
+  const stand = () => {
+    let dealerHand = [...dealerCards];
+    
+    // Dealer draws cards
+    while (getHandValue(dealerHand) < 17) {
+      dealerHand.push(Math.ceil(Math.random() * 13));
+    }
+    
+    setDealerCards(dealerHand);
+    
+    const playerValue = getHandValue(playerCards);
+    const dealerValue = getHandValue(dealerHand);
+    
+    if (dealerValue > 21) {
+      setUserBalance(prev => prev + currentBet * 2);
+      setGameResult(`Дилер перебрал! Выигрыш: ${currentBet * 2}₽! 🎉`);
+    } else if (playerValue > dealerValue) {
+      setUserBalance(prev => prev + currentBet * 2);
+      setGameResult(`Вы выиграли! Выигрыш: ${currentBet * 2}₽! 🎉`);
+    } else if (playerValue === dealerValue) {
+      setUserBalance(prev => prev + currentBet);
+      setGameResult('Ничья! Ставка возвращена.');
+    } else {
+      setGameResult('Дилер выиграл!');
+    }
+    
+    setGameState('finished');
+  };
+
+  const depositFunds = (amount: number, method: string) => {
     setUserBalance(prev => prev + amount);
-    alert(`Баланс пополнен на ${amount}₽!\nНовый баланс: ${userBalance + amount}₽`);
+    setGameResult(`Баланс пополнен на ${amount}₽ через ${method}!`);
   };
 
   const activateBonus = (bonusTitle: string) => {
-    alert(`Бонус "${bonusTitle}" активирован!\n\nВы получили дополнительные средства на счет.`);
+    const bonusAmounts: { [key: string]: number } = {
+      "Приветственный бонус": 10000,
+      "Фриспины": 2500,
+      "Кэшбэк": 1500
+    };
+    
+    const amount = bonusAmounts[bonusTitle] || 1000;
+    setUserBalance(prev => prev + amount);
+    setGameResult(`Бонус "${bonusTitle}" активирован! +${amount}₽`);
+  };
+
+  const renderGameSection = (gameType: string) => {
+    switch(gameType) {
+      case 'slots':
+        return (
+          <div className="space-y-6">
+            <Card className="modern-card">
+              <CardHeader>
+                <CardTitle className="text-center">🎰 Слот-машина</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-center space-x-4 text-6xl p-8 bg-muted/20 rounded-xl">
+                  {slotSymbols.map((symbol, index) => (
+                    <div key={index} className={`${slotSpinning ? 'animate-bounce' : ''}`}>
+                      {symbol}
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <Label>Ставка:</Label>
+                  <Select value={currentBet.toString()} onValueChange={(value) => setCurrentBet(Number(value))}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10₽</SelectItem>
+                      <SelectItem value="50">50₽</SelectItem>
+                      <SelectItem value="100">100₽</SelectItem>
+                      <SelectItem value="500">500₽</SelectItem>
+                      <SelectItem value="1000">1000₽</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <Button 
+                  className="w-full luxury-gradient" 
+                  onClick={playSlotMachine}
+                  disabled={slotSpinning}
+                >
+                  {slotSpinning ? 'Вращение...' : `Крутить (${currentBet}₽)`}
+                </Button>
+                
+                {gameResult && (
+                  <div className="text-center p-3 bg-muted/20 rounded-lg">
+                    {gameResult}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 'roulette':
+        return (
+          <div className="space-y-6">
+            <Card className="modern-card">
+              <CardHeader>
+                <CardTitle className="text-center">🎲 Рулетка</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-center">
+                  <div className={`text-6xl mb-4 ${rouletteSpinning ? 'animate-spin' : ''}`}>
+                    🎯
+                  </div>
+                  <div className="text-2xl font-bold gradient-text">
+                    {rouletteSpinning ? '???' : rouletteNumber}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Тип ставки:</Label>
+                    <Select value={rouletteBet.type} onValueChange={(value) => setRouletteBet({...rouletteBet, type: value})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="number">Число (35:1)</SelectItem>
+                        <SelectItem value="red">Красное (2:1)</SelectItem>
+                        <SelectItem value="black">Черное (2:1)</SelectItem>
+                        <SelectItem value="even">Четное (2:1)</SelectItem>
+                        <SelectItem value="odd">Нечетное (2:1)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label>Ставка:</Label>
+                    <Select value={currentBet.toString()} onValueChange={(value) => setCurrentBet(Number(value))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="25">25₽</SelectItem>
+                        <SelectItem value="100">100₽</SelectItem>
+                        <SelectItem value="500">500₽</SelectItem>
+                        <SelectItem value="1000">1000₽</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {rouletteBet.type === 'number' && (
+                  <div>
+                    <Label>Выберите число (0-36):</Label>
+                    <Input 
+                      type="number" 
+                      min="0" 
+                      max="36" 
+                      value={rouletteBet.value} 
+                      onChange={(e) => setRouletteBet({...rouletteBet, value: Number(e.target.value)})}
+                    />
+                  </div>
+                )}
+                
+                <Button 
+                  className="w-full luxury-gradient" 
+                  onClick={playRoulette}
+                  disabled={rouletteSpinning}
+                >
+                  {rouletteSpinning ? 'Вращение...' : `Крутить рулетку (${currentBet}₽)`}
+                </Button>
+                
+                {gameResult && (
+                  <div className="text-center p-3 bg-muted/20 rounded-lg">
+                    {gameResult}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 'blackjack':
+        return (
+          <div className="space-y-6">
+            <Card className="modern-card">
+              <CardHeader>
+                <CardTitle className="text-center">🂡 Блэкджек</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {gameState === 'betting' ? (
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Ставка:</Label>
+                      <Select value={currentBet.toString()} onValueChange={(value) => setCurrentBet(Number(value))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="20">20₽</SelectItem>
+                          <SelectItem value="100">100₽</SelectItem>
+                          <SelectItem value="500">500₽</SelectItem>
+                          <SelectItem value="1000">1000₽</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button className="w-full luxury-gradient" onClick={startBlackJack}>
+                      Начать игру ({currentBet}₽)
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center">
+                        <h4 className="font-semibold mb-2">Ваши карты ({getHandValue(playerCards)})</h4>
+                        <div className="space-x-2">
+                          {playerCards.map((card, index) => (
+                            <Badge key={index} variant="outline" className="text-lg p-2">
+                              {card > 10 ? ['J','Q','K'][card-11] : card}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="text-center">
+                        <h4 className="font-semibold mb-2">Дилер ({getHandValue(dealerCards)})</h4>
+                        <div className="space-x-2">
+                          {dealerCards.map((card, index) => (
+                            <Badge key={index} variant="outline" className="text-lg p-2">
+                              {card > 10 ? ['J','Q','K'][card-11] : card}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {gameState === 'playing' && (
+                      <div className="flex space-x-2">
+                        <Button onClick={hitCard} className="flex-1">
+                          Взять карту
+                        </Button>
+                        <Button onClick={stand} variant="outline" className="flex-1">
+                          Остановиться
+                        </Button>
+                      </div>
+                    )}
+                    
+                    {gameState === 'finished' && (
+                      <Button 
+                        className="w-full luxury-gradient" 
+                        onClick={() => {
+                          setGameState('betting');
+                          setPlayerCards([]);
+                          setDealerCards([]);
+                          setGameResult('');
+                        }}
+                      >
+                        Новая игра
+                      </Button>
+                    )}
+                  </div>
+                )}
+                
+                {gameResult && (
+                  <div className="text-center p-3 bg-muted/20 rounded-lg">
+                    {gameResult}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      default:
+        return null;
+    }
   };
 
   const renderSection = () => {
+    // Check if we're in a specific game
+    if (['slots', 'roulette', 'blackjack'].includes(activeSection)) {
+      return (
+        <div className="space-y-6">
+          <div className="flex items-center space-x-4">
+            <Button variant="ghost" onClick={() => setActiveSection('games')} className="interactive-button">
+              <Icon name="ArrowLeft" className="mr-2" size={16} />
+              Назад к играм
+            </Button>
+            <h2 className="text-3xl font-bold gradient-text">
+              {activeSection === 'slots' ? 'Слот-машины' : 
+               activeSection === 'roulette' ? 'Рулетка' :
+               activeSection === 'blackjack' ? 'Блэкджек' : ''}
+            </h2>
+          </div>
+          {renderGameSection(activeSection)}
+        </div>
+      );
+    }
+
     switch(activeSection) {
       case 'profile':
         return (
@@ -113,47 +554,62 @@ export default function Index() {
         return (
           <div className="space-y-6">
             <h2 className="text-3xl font-bold gradient-text">Каталог игр</h2>
-            <Tabs defaultValue="all" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="all">Все игры</TabsTrigger>
-                <TabsTrigger value="slots">Слоты</TabsTrigger>
-                <TabsTrigger value="table">Настольные</TabsTrigger>
-                <TabsTrigger value="card">Карточные</TabsTrigger>
-              </TabsList>
-              <TabsContent value="all" className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {games.map((game, index) => (
-                    <Card key={index} className="modern-card cursor-pointer floating-animation" style={{animationDelay: `${index * 0.1}s`}}>
-                      <CardHeader>
-                        <div className="text-4xl mb-2">{game.image}</div>
-                        <CardTitle className="text-lg">{game.name}</CardTitle>
-                        <CardDescription>{game.type}</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          <div className="flex justify-between text-sm">
-                            <span>Мин. ставка:</span>
-                            <span className="font-semibold">₽{game.minBet}</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span>Макс. выигрыш:</span>
-                            <span className="gradient-text font-semibold">₽{game.maxWin.toLocaleString()}</span>
-                          </div>
-                          <Progress value={game.popularity} className="h-2" />
-                          <Button 
-                            className="w-full luxury-gradient interactive-button" 
-                            onClick={() => playGame(game.name)}
-                          >
-                            <Icon name="Play" className="mr-2" size={16} />
-                            Играть
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </TabsContent>
-            </Tabs>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card className="modern-card cursor-pointer floating-animation" onClick={() => setActiveSection('slots')}>
+                <CardHeader>
+                  <div className="text-4xl mb-2">🎰</div>
+                  <CardTitle className="text-lg">Слот-машины</CardTitle>
+                  <CardDescription>Классические и современные слоты</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full luxury-gradient interactive-button">
+                    <Icon name="Play" className="mr-2" size={16} />
+                    Играть
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="modern-card cursor-pointer floating-animation" onClick={() => setActiveSection('roulette')}>
+                <CardHeader>
+                  <div className="text-4xl mb-2">🎲</div>
+                  <CardTitle className="text-lg">Рулетка</CardTitle>
+                  <CardDescription>Европейская рулетка</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full luxury-gradient interactive-button">
+                    <Icon name="Play" className="mr-2" size={16} />
+                    Играть
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="modern-card cursor-pointer floating-animation" onClick={() => setActiveSection('blackjack')}>
+                <CardHeader>
+                  <div className="text-4xl mb-2">🂡</div>
+                  <CardTitle className="text-lg">Блэкджек</CardTitle>
+                  <CardDescription>Классический блэкджек</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full luxury-gradient interactive-button">
+                    <Icon name="Play" className="mr-2" size={16} />
+                    Играть
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="modern-card cursor-pointer floating-animation opacity-50">
+                <CardHeader>
+                  <div className="text-4xl mb-2">♠️</div>
+                  <CardTitle className="text-lg">Покер</CardTitle>
+                  <CardDescription>Скоро доступен</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full" variant="outline" disabled>
+                    Скоро
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         );
 
@@ -257,27 +713,48 @@ export default function Index() {
                 </Button>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {games.slice(0, 4).map((game, index) => (
-                  <Card key={index} className="modern-card cursor-pointer floating-animation" style={{animationDelay: `${index * 0.1}s`}}>
-                    <CardHeader>
-                      <div className="text-4xl mb-2">{game.image}</div>
-                      <CardTitle className="text-lg">{game.name}</CardTitle>
-                      <CardDescription>{game.type}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-muted-foreground">Популярность</span>
-                        <span className="text-sm font-semibold gradient-text">{game.popularity}%</span>
-                      </div>
-                      <Progress value={game.popularity} className="mb-3" />
-                      <Button className="w-full luxury-gradient interactive-button" onClick={() => playGame(game.name)}>
-                        <Icon name="Play" className="mr-2" size={16} />
-                        Играть
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <Card className="modern-card cursor-pointer floating-animation" onClick={() => setActiveSection('slots')}>
+                  <CardHeader>
+                    <div className="text-4xl mb-2">🎰</div>
+                    <CardTitle className="text-lg">Слот-машины</CardTitle>
+                    <CardDescription>Крутите барабаны и выигрывайте!</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button className="w-full luxury-gradient interactive-button">
+                      <Icon name="Play" className="mr-2" size={16} />
+                      Играть
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card className="modern-card cursor-pointer floating-animation" style={{animationDelay: '0.1s'}} onClick={() => setActiveSection('roulette')}>
+                  <CardHeader>
+                    <div className="text-4xl mb-2">🎲</div>
+                    <CardTitle className="text-lg">Рулетка</CardTitle>
+                    <CardDescription>Делайте ставки и испытайте удачу!</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button className="w-full luxury-gradient interactive-button">
+                      <Icon name="Play" className="mr-2" size={16} />
+                      Играть
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card className="modern-card cursor-pointer floating-animation" style={{animationDelay: '0.2s'}} onClick={() => setActiveSection('blackjack')}>
+                  <CardHeader>
+                    <div className="text-4xl mb-2">🂡</div>
+                    <CardTitle className="text-lg">Блэкджек</CardTitle>
+                    <CardDescription>Наберите 21 и обыграйте дилера!</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button className="w-full luxury-gradient interactive-button">
+                      <Icon name="Play" className="mr-2" size={16} />
+                      Играть
+                    </Button>
+                  </CardContent>
+                </Card>
               </div>
             </section>
 
@@ -285,21 +762,21 @@ export default function Index() {
             <section className="glass-effect rounded-2xl p-8">
               <h3 className="text-2xl font-bold mb-6 text-center gradient-text">Быстрые действия</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Button className="h-16 luxury-gradient flex-col interactive-button" onClick={() => playGame("Случайный слот")}>
+                <Button className="h-16 luxury-gradient flex-col interactive-button" onClick={() => setActiveSection('slots')}>
                   <Icon name="Shuffle" size={24} />
                   <span className="text-sm mt-1">Слоты</span>
                 </Button>
-                <Button className="h-16 bg-secondary hover:bg-secondary/90 flex-col interactive-button" onClick={() => playGame("Рулетка")}>
+                <Button className="h-16 bg-secondary hover:bg-secondary/90 flex-col interactive-button" onClick={() => setActiveSection('roulette')}>
                   <Icon name="CircleDot" size={24} />
                   <span className="text-sm mt-1">Рулетка</span>
                 </Button>
-                <Button className="h-16 bg-accent hover:bg-accent/90 flex-col interactive-button" onClick={() => playGame("Покер")}>
+                <Button className="h-16 bg-accent hover:bg-accent/90 flex-col interactive-button" onClick={() => setActiveSection('blackjack')}>
                   <Icon name="Spade" size={24} />
-                  <span className="text-sm mt-1">Покер</span>
-                </Button>
-                <Button className="h-16 bg-muted hover:bg-muted/90 text-foreground flex-col interactive-button" onClick={() => playGame("Блэкджек")}>
-                  <Icon name="CreditCard" size={24} />
                   <span className="text-sm mt-1">Блэкджек</span>
+                </Button>
+                <Button className="h-16 bg-muted hover:bg-muted/90 text-foreground flex-col interactive-button" onClick={() => setActiveSection('bonuses')}>
+                  <Icon name="Gift" size={24} />
+                  <span className="text-sm mt-1">Бонусы</span>
                 </Button>
               </div>
             </section>
@@ -329,7 +806,7 @@ export default function Index() {
                 </Button>
                 <Button 
                   variant="ghost" 
-                  className={`text-foreground hover:text-primary interactive-button ${activeSection === 'games' ? 'text-purple-400' : ''}`}
+                  className={`text-foreground hover:text-primary interactive-button ${['games', 'slots', 'roulette', 'blackjack'].includes(activeSection) ? 'text-purple-400' : ''}`}
                   onClick={() => setActiveSection('games')}
                 >
                   <Icon name="Gamepad2" className="mr-2" size={16} />
@@ -365,27 +842,72 @@ export default function Index() {
                     Пополнить
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="glass-effect">
+                <DialogContent className="glass-effect max-w-md">
                   <DialogHeader>
                     <DialogTitle className="gradient-text">Пополнение баланса</DialogTitle>
                     <DialogDescription>
-                      Выберите сумму для пополнения вашего игрового счета
+                      Выберите способ пополнения и сумму
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="grid grid-cols-2 gap-4 py-4">
-                    <Button onClick={() => depositFunds(1000)} className="interactive-button" variant="outline">
-                      +1,000₽
-                    </Button>
-                    <Button onClick={() => depositFunds(5000)} className="interactive-button" variant="outline">
-                      +5,000₽
-                    </Button>
-                    <Button onClick={() => depositFunds(10000)} className="luxury-gradient interactive-button">
-                      +10,000₽
-                    </Button>
-                    <Button onClick={() => depositFunds(25000)} className="luxury-gradient interactive-button">
-                      +25,000₽
-                    </Button>
-                  </div>
+                  
+                  <Tabs defaultValue="quick" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="quick">Быстро</TabsTrigger>
+                      <TabsTrigger value="methods">Способы</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="quick" className="space-y-4">
+                      <div className="grid grid-cols-2 gap-3">
+                        <Button onClick={() => depositFunds(1000, "Быстрое пополнение")} className="interactive-button" variant="outline">
+                          +1,000₽
+                        </Button>
+                        <Button onClick={() => depositFunds(5000, "Быстрое пополнение")} className="interactive-button" variant="outline">
+                          +5,000₽
+                        </Button>
+                        <Button onClick={() => depositFunds(10000, "Быстрое пополнение")} className="luxury-gradient interactive-button">
+                          +10,000₽
+                        </Button>
+                        <Button onClick={() => depositFunds(25000, "Быстрое пополнение")} className="luxury-gradient interactive-button">
+                          +25,000₽
+                        </Button>
+                      </div>
+                      
+                      <Separator />
+                      
+                      <div className="space-y-2">
+                        <Label>Произвольная сумма</Label>
+                        <div className="flex space-x-2">
+                          <Input placeholder="Введите сумму" type="number" className="flex-1" />
+                          <Button className="luxury-gradient">Пополнить</Button>
+                        </div>
+                      </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="methods" className="space-y-4">
+                      <div className="space-y-3">
+                        {paymentMethods.map((method, index) => (
+                          <Card key={index} className={`p-4 cursor-pointer transition-all hover:bg-muted/20 ${method.popular ? 'border-purple-500/50' : ''}`} 
+                                onClick={() => depositFunds(5000, method.name)}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                <Icon name={method.icon as any} size={20} />
+                                <div>
+                                  <div className="font-medium flex items-center space-x-2">
+                                    <span>{method.name}</span>
+                                    {method.popular && <Badge className="luxury-gradient text-xs">Популярно</Badge>}
+                                  </div>
+                                  <div className="text-sm text-muted-foreground">
+                                    Комиссия: {method.fee} • {method.time}
+                                  </div>
+                                </div>
+                              </div>
+                              <Icon name="ChevronRight" size={16} />
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    </TabsContent>
+                  </Tabs>
                 </DialogContent>
               </Dialog>
             </div>
@@ -403,7 +925,7 @@ export default function Index() {
                 Добро пожаловать в LuxuryCardClub
               </h2>
               <p className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-                Премиум игровой опыт с современным дизайном, лучшими играми и мгновенными выплатами
+                Играйте в настоящие игры с реальными выигрышами и мгновенными выплатами
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button size="lg" variant="secondary" className="bg-white text-black hover:bg-white/90 interactive-button" onClick={() => setActiveSection('games')}>
@@ -421,6 +943,20 @@ export default function Index() {
 
         {/* Dynamic Content */}
         {renderSection()}
+        
+        {/* Game Result Notification */}
+        {gameResult && activeSection === 'home' && (
+          <div className="fixed bottom-4 right-4 z-50">
+            <Card className="modern-card luxury-glow">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2">
+                  <Icon name="Bell" size={16} />
+                  <span className="text-sm">{gameResult}</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
 
       {/* Footer */}
@@ -440,7 +976,7 @@ export default function Index() {
               </Button>
               <Button variant="ghost" size="sm" className="interactive-button">
                 <Icon name="HelpCircle" className="mr-2" size={14} />
-                Поддержка
+                Поддержка 24/7
               </Button>
               <Button variant="ghost" size="sm" className="interactive-button">
                 <Icon name="FileText" className="mr-2" size={14} />
